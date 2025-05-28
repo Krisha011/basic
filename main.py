@@ -1,6 +1,8 @@
 import streamlit as st
+import pandas as pd
+from io import BytesIO
 
-# Realistic example data for Patna institutes
+# Same data as pehle
 INSTITUTES = [
     {
         "name": "AIIMS Patna",
@@ -72,32 +74,56 @@ FUNDING_AGENCIES = [
     "ICMR", "DBT", "DST", "CSIR", "BIRAC"
 ]
 
-def main():
-    st.title("AdvaitInsight - Sample Institute Data (Patna)")
-
+def create_rows():
+    rows = []
     for inst in INSTITUTES:
-        st.header(inst["name"])
-        st.write(f"Location: {inst['location']}")
-        st.write(f"Website: {inst['website']}")
-        st.write(f"Research Domains: {', '.join(inst['domains'])}")
-
-        st.subheader("Key Personnel:")
         for person in PERSONS[inst["name"]]:
-            st.markdown(f"**Name:** {person['name']}")
-            st.markdown(f"**Designation:** {person['designation']}")
-            st.markdown(f"**Email:** {person['email']}")
-            st.markdown(f"**Contact:** {person['contact']}")
-            st.markdown(f"**LinkedIn:** [Profile]({person['linkedin']})")
-            st.markdown(f"**Expertise:** {person['expertise']}")
-            st.markdown(f"**Department:** {person['department']}")
-            st.markdown(f"**Lab/Unit:** {person['lab']}")
-            st.markdown("---")
+            row = {
+                "Institute Name": inst["name"],
+                "Location": inst["location"],
+                "Institute Website": inst["website"],
+                "Department Name": person["department"],
+                "Lab/Unit Name": person["lab"],
+                "Person Name": person["name"],
+                "Designation": person["designation"],
+                "Email": person["email"],
+                "Contact": person["contact"],
+                "LinkedIn": person["linkedin"],
+                "Primary Focus Area": person["expertise"],
+                "Ongoing Projects": "Exploring advanced omics integration in patient diagnostics.",
+                "Funding Agencies": ", ".join(FUNDING_AGENCIES),
+                "Recent Publications": "https://pubmed.ncbi.nlm.nih.gov/PMID12345678/",
+                "Services": ", ".join(SERVICES_SOLUTIONS),
+                "Matched Advait Solution(s)": ", ".join(SERVICES_SOLUTIONS),
+                "Match Category": "High Relevance"
+            }
+            rows.append(row)
+    return rows
 
-        st.subheader("Services Provided")
-        st.write(", ".join(SERVICES_SOLUTIONS))
+def to_excel(df):
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine="xlsxwriter")
+    df.to_excel(writer, index=False, sheet_name="Sheet2")
+    writer.save()
+    processed_data = output.getvalue()
+    return processed_data
 
-        st.subheader("Funding Agencies")
-        st.write(", ".join(FUNDING_AGENCIES))
+def main():
+    st.title("AdvaitInsight - Patna Institutes Data Export")
+
+    rows = create_rows()
+    df = pd.DataFrame(rows)
+
+    st.dataframe(df)
+
+    excel_data = to_excel(df)
+
+    st.download_button(
+        label="Download Excel file",
+        data=excel_data,
+        file_name="Patna_Institutes_Data.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 if __name__ == "__main__":
     main()
