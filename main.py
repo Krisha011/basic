@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
-# Same data as pehle
+# Real data - same as before
 INSTITUTES = [
     {
         "name": "AIIMS Patna",
@@ -74,7 +74,14 @@ FUNDING_AGENCIES = [
     "ICMR", "DBT", "DST", "CSIR", "BIRAC"
 ]
 
-def create_rows():
+# Columns expected in Excel
+EXPECTED_COLUMNS = [
+    "Institute Name", "Location", "Institute Website", "Department Name", "Lab/Unit Name", "Person Name",
+    "Designation", "Email", "Contact", "LinkedIn", "Primary Focus Area", "Ongoing Projects",
+    "Funding Agencies", "Recent Publications", "Services", "Matched Advait Solution(s)", "Match Category"
+]
+
+def fill_data():
     rows = []
     for inst in INSTITUTES:
         for person in PERSONS[inst["name"]]:
@@ -105,25 +112,41 @@ def to_excel(df):
     writer = pd.ExcelWriter(output, engine="xlsxwriter")
     df.to_excel(writer, index=False, sheet_name="Sheet2")
     writer.save()
-    processed_data = output.getvalue()
-    return processed_data
+    return output.getvalue()
 
 def main():
-    st.title("AdvaitInsight - Patna Institutes Data Export")
+    st.title("Upload blank Excel file and get filled data for Patna Institutes")
 
-    rows = create_rows()
-    df = pd.DataFrame(rows)
+    uploaded_file = st.file_uploader("Upload your blank Excel file with correct columns", type=["xlsx"])
 
-    st.dataframe(df)
+    if uploaded_file:
+        try:
+            df_input = pd.read_excel(uploaded_file)
+            # Check columns
+            if list(df_input.columns) != EXPECTED_COLUMNS:
+                st.error("Uploaded file columns do not match expected columns. Please upload correct template.")
+                st.stop()
 
-    excel_data = to_excel(df)
+            # Fill data rows
+            data_rows = fill_data()
+            df_filled = pd.DataFrame(data_rows, columns=EXPECTED_COLUMNS)
 
-    st.download_button(
-        label="Download Excel file",
-        data=excel_data,
-        file_name="Patna_Institutes_Data.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+            st.success("Data filled successfully!")
+            st.dataframe(df_filled)
+
+            excel_bytes = to_excel(df_filled)
+            st.download_button(
+                label="Download filled Excel file",
+                data=excel_bytes,
+                file_name="Filled_Patna_Institutes_Data.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+        except Exception as e:
+            st.error(f"Error processing file: {e}")
+
+    else:
+        st.info("Please upload a blank Excel file with the correct columns to get started.")
 
 if __name__ == "__main__":
     main()
